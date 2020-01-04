@@ -1,5 +1,8 @@
-package com.icarus.batch.community.batch.domain;
+package com.icarus.batch.domain;
 
+import com.icarus.batch.domain.enums.Grade;
+import com.icarus.batch.domain.enums.SocialType;
+import com.icarus.batch.domain.enums.UserStatus;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
