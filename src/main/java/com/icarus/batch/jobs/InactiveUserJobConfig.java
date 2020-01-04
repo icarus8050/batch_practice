@@ -5,9 +5,13 @@ import com.icarus.batch.domain.enums.UserStatus;
 import com.icarus.batch.jobs.readers.QueueItemReader;
 import com.icarus.batch.repository.UserRepository;
 import lombok.AllArgsConstructor;
+import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
+import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepScope;
+import org.springframework.batch.item.ItemProcessor;
+import org.springframework.batch.item.ItemWriter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -19,6 +23,15 @@ import java.util.List;
 public class InactiveUserJobConfig {
 
     private UserRepository userRepository;
+
+    @Bean
+    public Job inactiveUserJob(JobBuilderFactory jobBuilderFactory,
+                               Step inactiveJobStep) {
+        return jobBuilderFactory.get("inactiveUserJob")
+                .preventRestart()
+                .start(inactiveJobStep)
+                .build();
+    }
 
     @Bean
     public Step inactiveJobStep(StepBuilderFactory stepBuilderFactory) {
@@ -37,5 +50,13 @@ public class InactiveUserJobConfig {
                 userRepository.findByUpdatedDateBeforeAndStatusEquals(
                         LocalDateTime.now().minusYears(1), UserStatus.ACTIVE);
         return new QueueItemReader<>(oldUsers);
+    }
+
+    public ItemProcessor<User, User> inactiveUserProcessor() {
+        return User::setInactive;
+    }
+
+    public ItemWriter<User> inactiveUserWriter() {
+        return ((List<? extends User> users) -> userRepository.saveAll(users));
     }
 }
