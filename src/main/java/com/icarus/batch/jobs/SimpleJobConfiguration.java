@@ -1,4 +1,4 @@
-package com.icarus.batch.job;
+package com.icarus.batch.jobs;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
