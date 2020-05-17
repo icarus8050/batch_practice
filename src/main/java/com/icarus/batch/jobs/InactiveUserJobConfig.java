@@ -3,8 +3,8 @@ package com.icarus.batch.jobs;
 import com.icarus.batch.domain.User;
 import com.icarus.batch.domain.enums.UserStatus;
 import com.icarus.batch.jobs.readers.QuerydslPagingItemReader;
-import com.icarus.batch.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
@@ -16,16 +16,15 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import javax.persistence.EntityManagerFactory;
-
 import java.time.LocalDateTime;
 
 import static com.icarus.batch.domain.QUser.user;
 
+@Slf4j
 @RequiredArgsConstructor
 @Configuration
 public class InactiveUserJobConfig {
 
-    private final UserRepository userRepository;
     private final JobBuilderFactory jobBuilderFactory;
     private final StepBuilderFactory stepBuilderFactory;
     private final EntityManagerFactory entityManagerFactory;
