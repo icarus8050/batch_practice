@@ -1,4 +1,4 @@
-package com.icarus.batch.domain.enums;
+package com.icarus.batch.member.domain.enums;
 
 public enum SocialType {
     FACEBOOK("facebook"),

@@ -1,7 +1,7 @@
 package com.icarus.batch.community.batch;
 
-import com.icarus.batch.domain.enums.UserStatus;
-import com.icarus.batch.repository.UserRepository;
+import com.icarus.batch.member.domain.enums.UserStatus;
+import com.icarus.batch.member.repository.MemberRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.batch.core.BatchStatus;
@@ -17,20 +17,20 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest
-public class InactiveUserJobTest {
+public class InactiveMemberJobTest {
 
     @Autowired
     private JobLauncherTestUtils jobLauncherTestUtils;
 
     @Autowired
-    private UserRepository userRepository;
+    private MemberRepository memberRepository;
 
     @Test
     public void 휴먼_회원_전환_테스트() throws Exception {
         JobExecution jobExecution = jobLauncherTestUtils.launchJob();
 
         assertEquals(BatchStatus.COMPLETED, jobExecution.getStatus());
-        assertEquals(0, userRepository.findByUpdatedDateBeforeAndStatusEquals(
+        assertEquals(0, memberRepository.findByUpdatedDateBeforeAndStatusEquals(
                 LocalDateTime.now().minusYears(1), UserStatus.ACTIVE).size());
     }
 }
