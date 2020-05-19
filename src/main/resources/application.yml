@@ -47,4 +47,4 @@ logging:
   level:
     org:
       springframework:
-        batch: debug
+        batch: trace

@@ -23,6 +23,7 @@ import java.util.Objects;
 )
 public class MemberDataSourceConfig {
 
+    @Primary
     @Bean(name = "memberDataSource")
     @ConfigurationProperties(prefix = "spring.datasource.hikari.member")
     public DataSource memberDataSource() {
