@@ -33,9 +33,6 @@ public class Member implements Serializable {
     private String email;
 
     @Column
-    private String principal;
-
-    @Column
     @Enumerated(EnumType.STRING)
     private SocialType socialType;
 
@@ -54,13 +51,12 @@ public class Member implements Serializable {
     private LocalDateTime updatedDate;
 
     @Builder
-    public Member(String name, String password, String email, String principal,
+    public Member(String name, String password, String email,
                   SocialType socialType, UserStatus status, LocalDateTime createdDate,
                   LocalDateTime updatedDate) {
         this.name = name;
         this.password = password;
         this.email = email;
-        this.principal = principal;
         this.socialType = socialType;
         this.status = status;
         this.createdDate = createdDate;
