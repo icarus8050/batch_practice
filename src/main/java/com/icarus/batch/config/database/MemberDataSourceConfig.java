@@ -15,12 +15,12 @@ import org.springframework.transaction.PlatformTransactionManager;
 import javax.sql.DataSource;
 import java.util.Objects;
 
-@Configuration
 @EnableJpaRepositories(
         basePackages = {"com.icarus.batch.member"},
         entityManagerFactoryRef = "memberEntityManagerFactory",
         transactionManagerRef = "memberTransactionManager"
 )
+@Configuration
 public class MemberDataSourceConfig {
 
     @Primary

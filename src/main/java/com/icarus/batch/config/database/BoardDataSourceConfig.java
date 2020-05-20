@@ -14,12 +14,12 @@ import org.springframework.transaction.PlatformTransactionManager;
 import javax.sql.DataSource;
 import java.util.Objects;
 
-@Configuration
 @EnableJpaRepositories(
         basePackages = {"com.icarus.batch.board"},
         entityManagerFactoryRef = "boardEntityManagerFactory",
         transactionManagerRef = "boardTransactionManager"
 )
+@Configuration
 public class BoardDataSourceConfig {
 
     @Bean(name = "boardDataSource")

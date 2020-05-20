@@ -15,8 +15,10 @@ import org.springframework.batch.item.database.JpaItemWriter;
 import org.springframework.batch.item.database.JpaPagingItemReader;
 import org.springframework.batch.item.database.builder.JpaItemWriterBuilder;
 import org.springframework.batch.item.database.builder.JpaPagingItemReaderBuilder;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.transaction.PlatformTransactionManager;
 
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.PersistenceUnit;
@@ -35,6 +37,9 @@ public class InactiveUserJobConfig {
 
     @PersistenceUnit(unitName = "member")
     private EntityManagerFactory memberEmf;
+
+    @Qualifier("memberTransactionManager")
+    private final PlatformTransactionManager memberTx;
 
     @Bean
     public Job inactiveUserJob() {
@@ -68,6 +73,7 @@ public class InactiveUserJobConfig {
                 .queryString("select m from Member m where m.status = 'ACTIVE' and m.updatedDate < :lastUpdatedDate")
                 .parameterValues(parameterValues)
                 .entityManagerFactory(memberEmf)
+                .transacted(true)
                 .build();
     }
 
