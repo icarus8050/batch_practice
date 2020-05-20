@@ -5,7 +5,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 import javax.sql.DataSource;
@@ -15,9 +14,9 @@ import javax.sql.DataSource;
 )
 public class BatchDataSourceConfig {
 
-    @Bean(name = "batchDataSource")
+    /*@Bean(name = "batchDataSource")
     @ConfigurationProperties(prefix = "spring.datasource.hikari.batch")
     public DataSource batchDataSource() {
         return DataSourceBuilder.create().type(HikariDataSource.class).build();
-    }
+    }*/
 }
