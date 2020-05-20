@@ -4,15 +4,14 @@ import com.icarus.batch.board.repository.BoardRepository;
 import com.icarus.batch.member.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
-import javax.persistence.PersistenceUnit;
 
 @RequiredArgsConstructor
-@Configuration
+@Component
 public class LocalCommandLineRunner implements CommandLineRunner {
 
     private final MemberRepository memberRepository;
