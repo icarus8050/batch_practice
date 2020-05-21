@@ -9,6 +9,7 @@ import org.springframework.util.CollectionUtils;
 
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
+import javax.persistence.EntityTransaction;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,7 +22,7 @@ public class QuerydslPagingItemReader<T> extends AbstractPagingItemReader<T> {
     protected EntityManagerFactory entityManagerFactory;
     protected EntityManager entityManager;
     protected Function<JPAQueryFactory, JPAQuery<T>> queryFunction;
-    protected boolean transacted = true;//default value
+    protected boolean transacted = true; // default value
 
     protected QuerydslPagingItemReader() {
         setName(ClassUtils.getShortName(QuerydslPagingItemReader.class));
@@ -30,10 +31,18 @@ public class QuerydslPagingItemReader<T> extends AbstractPagingItemReader<T> {
     public QuerydslPagingItemReader(EntityManagerFactory entityManagerFactory,
                                     int pageSize,
                                     Function<JPAQueryFactory, JPAQuery<T>> queryFunction) {
+        this(entityManagerFactory, pageSize, true, queryFunction);
+    }
+
+    public QuerydslPagingItemReader(EntityManagerFactory entityManagerFactory,
+                                    int pageSize,
+                                    boolean transacted,
+                                    Function<JPAQueryFactory, JPAQuery<T>> queryFunction) {
         this();
         this.entityManagerFactory = entityManagerFactory;
         this.queryFunction = queryFunction;
         setPageSize(pageSize);
+        setTransacted(transacted);
     }
 
     /**
@@ -60,8 +69,7 @@ public class QuerydslPagingItemReader<T> extends AbstractPagingItemReader<T> {
     @Override
     @SuppressWarnings("unchecked")
     protected void doReadPage() {
-
-        clearIfTransacted();
+        EntityTransaction tx = getTxOrNull();
 
         JPAQuery<T> query = createQuery()
                 .offset(getPage() * getPageSize())
@@ -69,13 +77,20 @@ public class QuerydslPagingItemReader<T> extends AbstractPagingItemReader<T> {
 
         initResults();
 
-        fetchQuery(query);
+        fetchQuery(query, tx);
     }
 
-    protected void clearIfTransacted() {
+    protected EntityTransaction getTxOrNull() {
         if (transacted) {
+            EntityTransaction tx = entityManager.getTransaction();
+            tx.begin();
+
+            entityManager.flush();
             entityManager.clear();
+            return tx;
         }
+
+        return null;
     }
 
     protected JPAQuery<T> createQuery() {
@@ -91,15 +106,18 @@ public class QuerydslPagingItemReader<T> extends AbstractPagingItemReader<T> {
         }
     }
 
-    protected void fetchQuery(JPAQuery<T> query) {
-        if (!transacted) {
+    protected void fetchQuery(JPAQuery<T> query, EntityTransaction tx) {
+        if (transacted) {
+            results.addAll(query.fetch());
+            if(tx != null) {
+                tx.commit();
+            }
+        } else {
             List<T> queryResult = query.fetch();
             for (T entity : queryResult) {
                 entityManager.detach(entity);
                 results.add(entity);
             }
-        } else {
-            results.addAll(query.fetch());
         }
     }
 

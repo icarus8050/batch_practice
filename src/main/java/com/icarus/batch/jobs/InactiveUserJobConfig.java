@@ -1,6 +1,7 @@
 package com.icarus.batch.jobs;
 
 import com.icarus.batch.jobs.readers.QuerydslPagingItemReader;
+import com.icarus.batch.jobs.readers.QuerydslZeroPagingItemReader;
 import com.icarus.batch.member.domain.Member;
 import com.icarus.batch.member.domain.enums.UserStatus;
 import lombok.RequiredArgsConstructor;
@@ -58,7 +59,7 @@ public class InactiveUserJobConfig {
                 .get("inactiveMemberJobStep")
                 .transactionManager(memberTx)
                 .<Member, Member>chunk(10)
-                .reader(inactiveMemberQuerydslReader())
+                .reader(inactiveMemberZeroQuerydslReader())
                 .processor(inactiveMemberProcessor())
                 .writer(inactiveMemberWriter())
                 .build();
@@ -93,6 +94,24 @@ public class InactiveUserJobConfig {
                                         member.updatedDate.before(LocalDateTime.now().minusYears(1L))
                                 ).orderBy(member.idx.asc())
 
+                );
+        reader.setTransacted(false);
+        return reader;
+    }
+
+    @Bean
+    @StepScope
+    public QuerydslZeroPagingItemReader<Member> inactiveMemberZeroQuerydslReader() {
+        QuerydslZeroPagingItemReader<Member> reader =
+                new QuerydslZeroPagingItemReader<>(
+                        memberEmf,
+                        10,
+                        queryFactory -> queryFactory
+                                .selectFrom(member)
+                                .where(
+                                        member.status.eq(UserStatus.ACTIVE),
+                                        member.updatedDate.before(LocalDateTime.now().minusYears(1L))
+                                ).orderBy(member.idx.asc())
                 );
         reader.setTransacted(false);
         return reader;
