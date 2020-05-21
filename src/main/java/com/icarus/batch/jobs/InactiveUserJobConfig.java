@@ -54,6 +54,7 @@ public class InactiveUserJobConfig {
     public Step inactiveMemberJobStep() {
         return stepBuilderFactory
                 .get("inactiveMemberJobStep")
+                .transactionManager(memberTx)
                 .<Member, Member>chunk(10)
                 .reader(inactiveMemberReader())
                 .processor(inactiveMemberProcessor())

@@ -46,5 +46,9 @@ spring:
 logging:
   level:
     org:
+      hibernate:
+        type:
+          descriptor:
+            sql: trace
       springframework:
         batch: trace
