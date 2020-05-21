@@ -33,7 +33,6 @@ public class InactiveUserJobConfig {
 
     private final JobBuilderFactory jobBuilderFactory;
     private final StepBuilderFactory stepBuilderFactory;
-    private final MemberRepository memberRepository;
 
     @PersistenceUnit(unitName = "member")
     private EntityManagerFactory memberEmf;
@@ -54,6 +53,7 @@ public class InactiveUserJobConfig {
     public Step inactiveMemberJobStep() {
         return stepBuilderFactory
                 .get("inactiveMemberJobStep")
+                .transactionManager(memberTx)
                 .<Member, Member>chunk(10)
                 .reader(inactiveMemberReader())
                 .processor(inactiveMemberProcessor())
