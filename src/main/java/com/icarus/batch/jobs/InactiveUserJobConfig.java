@@ -74,7 +74,6 @@ public class InactiveUserJobConfig {
                 .queryString("select m from Member m where m.status = 'ACTIVE' and m.updatedDate < :lastUpdatedDate")
                 .parameterValues(parameterValues)
                 .entityManagerFactory(memberEmf)
-                .transacted(true)
                 .build();
     }
 
