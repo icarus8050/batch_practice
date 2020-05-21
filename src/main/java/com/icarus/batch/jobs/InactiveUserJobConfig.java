@@ -1,7 +1,8 @@
 package com.icarus.batch.jobs;
 
+import com.icarus.batch.jobs.readers.QuerydslPagingItemReader;
 import com.icarus.batch.member.domain.Member;
-import com.icarus.batch.member.repository.MemberRepository;
+import com.icarus.batch.member.domain.enums.UserStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.Job;
@@ -25,6 +26,8 @@ import javax.persistence.PersistenceUnit;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
+
+import static com.icarus.batch.member.domain.QMember.member;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -55,7 +58,7 @@ public class InactiveUserJobConfig {
                 .get("inactiveMemberJobStep")
                 .transactionManager(memberTx)
                 .<Member, Member>chunk(10)
-                .reader(inactiveMemberReader())
+                .reader(inactiveMemberQuerydslReader())
                 .processor(inactiveMemberProcessor())
                 .writer(inactiveMemberWriter())
                 .build();
@@ -74,6 +77,25 @@ public class InactiveUserJobConfig {
                 .parameterValues(parameterValues)
                 .entityManagerFactory(memberEmf)
                 .build();
+    }
+
+    @Bean
+    @StepScope
+    public QuerydslPagingItemReader<Member> inactiveMemberQuerydslReader() {
+        QuerydslPagingItemReader<Member> reader =
+                new QuerydslPagingItemReader<>(
+                        memberEmf,
+                        10,
+                        queryFactory -> queryFactory
+                                .selectFrom(member)
+                                .where(
+                                        member.status.eq(UserStatus.ACTIVE),
+                                        member.updatedDate.before(LocalDateTime.now().minusYears(1L))
+                                ).orderBy(member.idx.asc())
+
+                );
+        reader.setTransacted(false);
+        return reader;
     }
 
     public ItemProcessor<Member, Member> inactiveMemberProcessor() {
