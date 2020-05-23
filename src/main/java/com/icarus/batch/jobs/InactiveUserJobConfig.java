@@ -2,7 +2,10 @@ package com.icarus.batch.jobs;
 
 import com.icarus.batch.jobs.readers.QuerydslPagingItemReader;
 import com.icarus.batch.jobs.readers.QuerydslZeroPagingItemReader;
+import com.icarus.batch.member.domain.AwayMember;
 import com.icarus.batch.member.domain.Member;
+import com.icarus.batch.member.domain.MemberPhone;
+import com.icarus.batch.member.domain.QMemberPhone;
 import com.icarus.batch.member.domain.enums.UserStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,9 +30,11 @@ import javax.persistence.EntityManagerFactory;
 import javax.persistence.PersistenceUnit;
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static com.icarus.batch.member.domain.QMember.member;
+import static com.icarus.batch.member.domain.QMemberPhone.memberPhone;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -71,7 +76,7 @@ public class InactiveUserJobConfig {
         return stepBuilderFactory
                 .get("inactiveMemberJobStep")
                 .transactionManager(memberTx)
-                .<Member, Member>chunk(chunkSize)
+                .<Member, AwayMember>chunk(chunkSize)
                 .reader(inactiveMemberZeroQuerydslReader())
                 .processor(inactiveMemberProcessor())
                 .writer(inactiveMemberWriter())
@@ -102,13 +107,13 @@ public class InactiveUserJobConfig {
                         chunkSize,
                         queryFactory -> queryFactory
                                 .selectFrom(member)
+                                .leftJoin(member.phones, memberPhone).fetchJoin()
                                 .where(
                                         member.status.eq(UserStatus.ACTIVE),
                                         member.updatedDate.before(LocalDateTime.now().minusYears(1L))
                                 ).orderBy(member.idx.asc())
 
                 );
-        reader.setTransacted(false);
         return reader;
     }
 
@@ -123,23 +128,33 @@ public class InactiveUserJobConfig {
                         chunkSize,
                         queryFactory -> queryFactory
                                 .selectFrom(member)
+                                .leftJoin(member.phones, memberPhone).fetchJoin()
                                 .where(
                                         member.status.eq(UserStatus.ACTIVE),
                                         member.updatedDate.before(requestDateTime.minusYears(1L))
                                 ).orderBy(member.idx.asc())
                 );
-        reader.setTransacted(false);
+        reader.setTransacted(true);
         return reader;
     }
 
-    public ItemProcessor<Member, Member> inactiveMemberProcessor() {
-        return Member::setInactive;
+    public ItemProcessor<Member, AwayMember> inactiveMemberProcessor() {
+        return member -> {
+            List<MemberPhone> phones = member.getPhones();
+
+            for (MemberPhone phone : phones) {
+                phone.updatePhone("deleted");
+            }
+
+            member.setInactive();
+            return new AwayMember(member);
+        };
     }
 
     @Bean
     @StepScope
-    public JpaItemWriter<Member> inactiveMemberWriter() {
-        return new JpaItemWriterBuilder<Member>()
+    public JpaItemWriter<AwayMember> inactiveMemberWriter() {
+        return new JpaItemWriterBuilder<AwayMember>()
                 .entityManagerFactory(memberEmf)
                 .build();
     }

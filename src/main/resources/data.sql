@@ -19,3 +19,15 @@ insert into ex_member.member (idx, email, name, password, socialType, status, gr
 insert into ex_member.member (idx, email, name, password, socialType, status, grade, createdDate, updatedDate) values (1019, 'test@test.com', 'test11', 'test11', 'FACEBOOK', 'ACTIVE', 'FAMILY', '2016-03-01T00:00:00', '2016-03-01T00:00:00');
 insert into ex_member.member (idx, email, name, password, socialType, status, grade, createdDate, updatedDate) values (1020, 'test@test.com', 'test11', 'test11', 'FACEBOOK', 'ACTIVE', 'FAMILY', '2016-03-01T00:00:00', '2016-03-01T00:00:00');
 insert into ex_member.member (idx, email, name, password, socialType, status, grade, createdDate, updatedDate) values (1021, 'test@test.com', 'test11', 'test11', 'FACEBOOK', 'ACTIVE', 'FAMILY', '2016-03-01T00:00:00', '2016-03-01T00:00:00');
+
+insert into ex_member.memberphone (idx, member_idx, phone) values (1, 1001, '01012341234');
+insert into ex_member.memberphone (idx, member_idx, phone) values (2, 1002, '01012341234');
+insert into ex_member.memberphone (idx, member_idx, phone) values (3, 1003, '01012341234');
+insert into ex_member.memberphone (idx, member_idx, phone) values (4, 1004, '01012341234');
+insert into ex_member.memberphone (idx, member_idx, phone) values (5, 1005, '01012341234');
+insert into ex_member.memberphone (idx, member_idx, phone) values (6, 1006, '01012341234');
+insert into ex_member.memberphone (idx, member_idx, phone) values (7, 1007, '01012341234');
+insert into ex_member.memberphone (idx, member_idx, phone) values (8, 1008, '01012341234');
+insert into ex_member.memberphone (idx, member_idx, phone) values (9, 1009, '01012341234');
+insert into ex_member.memberphone (idx, member_idx, phone) values (10, 1010, '01012341234');
+insert into ex_member.memberphone (idx, member_idx, phone) values (11, 1011, '01012341234');

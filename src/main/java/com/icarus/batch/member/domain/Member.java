@@ -11,6 +11,8 @@ import lombok.NoArgsConstructor;
 import javax.persistence.*;
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @EqualsAndHashCode(of = {"idx", "email"})
@@ -22,6 +24,9 @@ public class Member implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idx;
+
+    @OneToMany(mappedBy = "member")
+    private List<MemberPhone> phones = new ArrayList<>();
 
     @Column
     private String name;
@@ -63,8 +68,7 @@ public class Member implements Serializable {
         this.updatedDate = updatedDate;
     }
 
-    public Member setInactive() {
+    public void setInactive() {
         status = UserStatus.INACTIVE;
-        return this;
     }
 }
