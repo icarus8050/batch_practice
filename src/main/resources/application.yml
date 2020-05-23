@@ -3,13 +3,18 @@ spring:
   main:
     allow-bean-definition-overriding: true
 
+  batch:
+    job:
+      names: ${job.name:NONE}
+      enabled: true
+
   jpa:
     properties:
       hibernate:
         show_sql: true
         format_sql: true
         use_sql_comments: true
-        default_batch_fetch_size: 10
+        default_batch_fetch_size: ${chunkSize:10}
 
     hibernate:
       ddl-auto: create

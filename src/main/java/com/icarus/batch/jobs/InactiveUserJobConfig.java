@@ -18,6 +18,7 @@ import org.springframework.batch.item.database.JpaPagingItemReader;
 import org.springframework.batch.item.database.builder.JpaItemWriterBuilder;
 import org.springframework.batch.item.database.builder.JpaPagingItemReaderBuilder;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -35,8 +36,11 @@ import static com.icarus.batch.member.domain.QMember.member;
 @Configuration
 public class InactiveUserJobConfig {
 
+    private static final String JOB_NAME = "inactiveJob";
+
     private final JobBuilderFactory jobBuilderFactory;
     private final StepBuilderFactory stepBuilderFactory;
+    private final InactiveMemberJobParameter jobParameter;
 
     @PersistenceUnit(unitName = "member")
     private EntityManagerFactory memberEmf;
@@ -44,10 +48,19 @@ public class InactiveUserJobConfig {
     @Qualifier("memberTransactionManager")
     private final PlatformTransactionManager memberTx;
 
+    @Value("${chunkSize:10}")
+    private int chunkSize;
+
+    @Bean
+    @JobScope
+    public InactiveMemberJobParameter jobParameter() {
+        return new InactiveMemberJobParameter();
+    }
+
     @Bean
     public Job inactiveUserJob() {
         return jobBuilderFactory
-                .get("inactiveJob")
+                .get(JOB_NAME)
                 .start(inactiveMemberJobStep())
                 .build();
     }
@@ -58,7 +71,7 @@ public class InactiveUserJobConfig {
         return stepBuilderFactory
                 .get("inactiveMemberJobStep")
                 .transactionManager(memberTx)
-                .<Member, Member>chunk(10)
+                .<Member, Member>chunk(chunkSize)
                 .reader(inactiveMemberZeroQuerydslReader())
                 .processor(inactiveMemberProcessor())
                 .writer(inactiveMemberWriter())
@@ -73,7 +86,7 @@ public class InactiveUserJobConfig {
 
         return new JpaPagingItemReaderBuilder<Member>()
                 .name("inactiveMemberReader")
-                .pageSize(10)
+                .pageSize(chunkSize)
                 .queryString("select m from Member m where m.status = 'ACTIVE' and m.updatedDate < :lastUpdatedDate")
                 .parameterValues(parameterValues)
                 .entityManagerFactory(memberEmf)
@@ -86,7 +99,7 @@ public class InactiveUserJobConfig {
         QuerydslPagingItemReader<Member> reader =
                 new QuerydslPagingItemReader<>(
                         memberEmf,
-                        10,
+                        chunkSize,
                         queryFactory -> queryFactory
                                 .selectFrom(member)
                                 .where(
@@ -102,15 +115,17 @@ public class InactiveUserJobConfig {
     @Bean
     @StepScope
     public QuerydslZeroPagingItemReader<Member> inactiveMemberZeroQuerydslReader() {
+        LocalDateTime requestDateTime = jobParameter.getRequestDateTime();
+
         QuerydslZeroPagingItemReader<Member> reader =
                 new QuerydslZeroPagingItemReader<>(
                         memberEmf,
-                        10,
+                        chunkSize,
                         queryFactory -> queryFactory
                                 .selectFrom(member)
                                 .where(
                                         member.status.eq(UserStatus.ACTIVE),
-                                        member.updatedDate.before(LocalDateTime.now().minusYears(1L))
+                                        member.updatedDate.before(requestDateTime.minusYears(1L))
                                 ).orderBy(member.idx.asc())
                 );
         reader.setTransacted(false);
