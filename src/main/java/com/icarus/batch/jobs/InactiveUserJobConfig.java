@@ -16,18 +16,22 @@ import org.springframework.batch.core.configuration.annotation.JobScope;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.item.ItemProcessor;
-import org.springframework.batch.item.database.JpaItemWriter;
-import org.springframework.batch.item.database.JpaPagingItemReader;
+import org.springframework.batch.item.database.*;
+import org.springframework.batch.item.database.builder.JdbcBatchItemWriterBuilder;
+import org.springframework.batch.item.database.builder.JdbcPagingItemReaderBuilder;
 import org.springframework.batch.item.database.builder.JpaItemWriterBuilder;
 import org.springframework.batch.item.database.builder.JpaPagingItemReaderBuilder;
+import org.springframework.batch.item.database.support.SqlPagingQueryProviderFactoryBean;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.PersistenceUnit;
+import javax.sql.DataSource;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -47,6 +51,9 @@ public class InactiveUserJobConfig {
     private final StepBuilderFactory stepBuilderFactory;
     private final InactiveMemberJobParameter jobParameter;
 
+    @Qualifier("memberDataSource")
+    private final DataSource dataSource;
+
     @PersistenceUnit(unitName = "member")
     private EntityManagerFactory memberEmf;
 
@@ -63,7 +70,7 @@ public class InactiveUserJobConfig {
     }
 
     @Bean
-    public Job inactiveUserJob() {
+    public Job inactiveUserJob() throws Exception {
         return jobBuilderFactory
                 .get(JOB_NAME)
                 .start(inactiveMemberJobStep())
@@ -72,17 +79,18 @@ public class InactiveUserJobConfig {
 
     @Bean
     @JobScope
-    public Step inactiveMemberJobStep() {
+    public Step inactiveMemberJobStep() throws Exception {
         return stepBuilderFactory
                 .get("inactiveMemberJobStep")
                 .transactionManager(memberTx)
-                .<Member, AwayMember>chunk(chunkSize)
-                .reader(inactiveMemberZeroQuerydslReader())
-                .processor(inactiveMemberProcessor())
-                .writer(inactiveMemberWriter())
+                .<Member, Member>chunk(chunkSize)
+                .reader(jdbcPagingItemReader())
+                .processor(jdbcPagingProcessor())
+                .writer(jdbcBatchItemWriter())
                 .build();
     }
 
+    /* Jpa Paging Batch */
     @Bean
     @StepScope
     public JpaPagingItemReader<Member> inactiveMemberReader() {
@@ -156,6 +164,60 @@ public class InactiveUserJobConfig {
     public JpaItemWriter<AwayMember> inactiveMemberWriter() {
         return new JpaItemWriterBuilder<AwayMember>()
                 .entityManagerFactory(memberEmf)
+                .build();
+    }
+
+    /* JDBC Paging Batch */
+    @Bean
+    @StepScope
+    public JdbcPagingItemReader<Member> jdbcPagingItemReader() throws Exception {
+        LocalDateTime requestDateTime = jobParameter.getRequestDateTime().minusYears(1L);
+        Map<String, Object> parameters = new HashMap<>();
+        parameters.put("lastActiveDateTime", requestDateTime);
+
+        return new JdbcPagingItemReaderBuilder<Member>()
+                .name("jdbcPagingItemReader")
+                .dataSource(dataSource)
+                .pageSize(chunkSize)
+                .fetchSize(chunkSize)
+                .rowMapper(new BeanPropertyRowMapper<>(Member.class))
+                .queryProvider(createQueryProvider())
+                .parameterValues(parameters)
+                .build();
+    }
+
+    @Bean
+    @StepScope
+    public PagingQueryProvider createQueryProvider() throws Exception {
+        SqlPagingQueryProviderFactoryBean queryProvider = new SqlPagingQueryProviderFactoryBean();
+        queryProvider.setDataSource(dataSource); // Database에 맞는 PagingQueryProvider를 선택하기 위해
+        queryProvider.setSelectClause("idx, status");
+        queryProvider.setFromClause("from ex_member.member");
+        queryProvider.setWhereClause("where status = 'ACTIVE' and updatedDate <= :lastActiveDateTime");
+
+        Map<String, Order> sortKeys = new HashMap<>(1);
+        sortKeys.put("idx", Order.ASCENDING);
+
+        queryProvider.setSortKeys(sortKeys);
+
+        return queryProvider.getObject();
+    }
+
+    @Bean
+    @StepScope
+    public ItemProcessor<Member, Member> jdbcPagingProcessor() {
+        return member -> {
+            member.setInactive();
+            return member;
+        };
+    }
+
+    @Bean
+    public JdbcBatchItemWriter<Member> jdbcBatchItemWriter() {
+        return new JdbcBatchItemWriterBuilder<Member>()
+                .dataSource(dataSource)
+                .sql("update ex_member.member set status = :status where idx = :idx")
+                .beanMapped()
                 .build();
     }
 }

@@ -3,10 +3,7 @@ package com.icarus.batch.member.domain;
 import com.icarus.batch.member.domain.enums.Grade;
 import com.icarus.batch.member.domain.enums.SocialType;
 import com.icarus.batch.member.domain.enums.UserStatus;
-import lombok.Builder;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import javax.persistence.*;
 import java.io.Serializable;
@@ -14,8 +11,9 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-@Getter
+@Data
 @EqualsAndHashCode(of = {"idx", "email"})
+@AllArgsConstructor
 @NoArgsConstructor
 @Table(schema = "ex_member")
 @Entity
