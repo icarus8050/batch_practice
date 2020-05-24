@@ -1,11 +1,11 @@
 package com.icarus.batch.jobs;
 
+import com.icarus.batch.jobs.dto.MemberDto;
 import com.icarus.batch.jobs.readers.QuerydslPagingItemReader;
 import com.icarus.batch.jobs.readers.QuerydslZeroPagingItemReader;
 import com.icarus.batch.member.domain.AwayMember;
 import com.icarus.batch.member.domain.Member;
 import com.icarus.batch.member.domain.MemberPhone;
-import com.icarus.batch.member.domain.QMemberPhone;
 import com.icarus.batch.member.domain.enums.UserStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -83,7 +83,7 @@ public class InactiveUserJobConfig {
         return stepBuilderFactory
                 .get("inactiveMemberJobStep")
                 .transactionManager(memberTx)
-                .<Member, Member>chunk(chunkSize)
+                .<MemberDto, Map<String, Object>>chunk(chunkSize)
                 .reader(jdbcPagingItemReader())
                 .processor(jdbcPagingProcessor())
                 .writer(jdbcBatchItemWriter())
@@ -146,6 +146,8 @@ public class InactiveUserJobConfig {
         return reader;
     }
 
+    @Bean
+    @StepScope
     public ItemProcessor<Member, AwayMember> inactiveMemberProcessor() {
         return member -> {
             List<MemberPhone> phones = member.getPhones();
@@ -170,17 +172,17 @@ public class InactiveUserJobConfig {
     /* JDBC Paging Batch */
     @Bean
     @StepScope
-    public JdbcPagingItemReader<Member> jdbcPagingItemReader() throws Exception {
+    public JdbcPagingItemReader<MemberDto> jdbcPagingItemReader() throws Exception {
         LocalDateTime requestDateTime = jobParameter.getRequestDateTime().minusYears(1L);
         Map<String, Object> parameters = new HashMap<>();
         parameters.put("lastActiveDateTime", requestDateTime);
 
-        return new JdbcPagingItemReaderBuilder<Member>()
+        return new JdbcPagingItemReaderBuilder<MemberDto>()
                 .name("jdbcPagingItemReader")
                 .dataSource(dataSource)
                 .pageSize(chunkSize)
                 .fetchSize(chunkSize)
-                .rowMapper(new BeanPropertyRowMapper<>(Member.class))
+                .rowMapper(new BeanPropertyRowMapper<>(MemberDto.class))
                 .queryProvider(createQueryProvider())
                 .parameterValues(parameters)
                 .build();
@@ -191,7 +193,7 @@ public class InactiveUserJobConfig {
     public PagingQueryProvider createQueryProvider() throws Exception {
         SqlPagingQueryProviderFactoryBean queryProvider = new SqlPagingQueryProviderFactoryBean();
         queryProvider.setDataSource(dataSource); // Database에 맞는 PagingQueryProvider를 선택하기 위해
-        queryProvider.setSelectClause("idx, status");
+        queryProvider.setSelectClause("idx, name, email, socialType, status, grade, createdDate, updatedDate");
         queryProvider.setFromClause("from ex_member.member");
         queryProvider.setWhereClause("where status = 'ACTIVE' and updatedDate <= :lastActiveDateTime");
 
@@ -203,21 +205,22 @@ public class InactiveUserJobConfig {
         return queryProvider.getObject();
     }
 
-    @Bean
-    @StepScope
-    public ItemProcessor<Member, Member> jdbcPagingProcessor() {
-        return member -> {
-            member.setInactive();
-            return member;
+    public ItemProcessor<MemberDto, Map<String, Object>> jdbcPagingProcessor() {
+        return item -> {
+            Map<String, Object> parameters = new HashMap<>();
+            item.setStatus(UserStatus.INACTIVE);
+            parameters.put("idx", item.getIdx());
+            parameters.put("status", item.getStatus().name());
+            return parameters;
         };
     }
 
     @Bean
-    public JdbcBatchItemWriter<Member> jdbcBatchItemWriter() {
-        return new JdbcBatchItemWriterBuilder<Member>()
+    public JdbcBatchItemWriter<Map<String, Object>> jdbcBatchItemWriter() {
+        return new JdbcBatchItemWriterBuilder<Map<String, Object>>()
                 .dataSource(dataSource)
                 .sql("update ex_member.member set status = :status where idx = :idx")
-                .beanMapped()
+                .columnMapped()
                 .build();
     }
 }
