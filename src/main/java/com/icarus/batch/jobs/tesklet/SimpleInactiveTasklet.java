@@ -1,11 +1,11 @@
 package com.icarus.batch.jobs.tesklet;
 
-import com.icarus.batch.jobs.InactiveMemberJobParameter;
 import com.icarus.batch.member.domain.Member;
 import com.icarus.batch.member.domain.enums.UserStatus;
 import com.icarus.batch.member.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.batch.core.StepContribution;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.batch.core.*;
 import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.scope.context.ChunkContext;
 import org.springframework.batch.core.step.tasklet.Tasklet;
@@ -19,33 +19,51 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Map;
 
+@Slf4j
 @RequiredArgsConstructor
 @StepScope
 @Component
-public class SimpleInactiveTasklet implements Tasklet {
+public class SimpleInactiveTasklet implements Tasklet, StepExecutionListener {
 
     private final MemberRepository memberRepository;
+    private LocalDateTime requestDateTime;
+
+    @Override
+    public void beforeStep(StepExecution stepExecution) {
+        JobParameters jobParameters = stepExecution.getJobParameters();
+        String requestDate = jobParameters.getString("requestDate");
+
+        assert requestDate != null;
+
+        requestDateTime = LocalDateTime.of(
+                LocalDate.parse(requestDate, DateTimeFormatter.ofPattern("yyyyMMdd")),
+                LocalTime.MIN);
+    }
 
     @Override
     public RepeatStatus execute(StepContribution contribution, ChunkContext chunkContext) throws Exception {
-        Map<String, Object> jobParameters = chunkContext.getStepContext().getJobParameters();
-        String requestDate = jobParameters.get("requestDate").toString();
-
-        LocalDateTime requestDateTime = LocalDateTime.of(
-                LocalDate.parse(requestDate, DateTimeFormatter.ofPattern("yyyyMMdd")),
-                LocalTime.MIN);
-
+        //read..
         Page<Member> members = memberRepository
                 .findByInactiveMember(requestDateTime, UserStatus.ACTIVE, PageRequest.of(0, 10, Sort.by("idx").ascending()));
+        contribution.incrementReadCount();
 
+        //process and write..
         members.get().parallel().forEach(Member::setInactive);
+        contribution.incrementWriteCount(members.getNumberOfElements());
 
         if (members.hasNext()) {
             return RepeatStatus.CONTINUABLE;
         }
 
         return RepeatStatus.FINISHED;
+    }
+
+    @Override
+    public ExitStatus afterStep(StepExecution stepExecution) {
+        log.info("{} readCount..", stepExecution.getReadCount());
+        log.info("{} commitCount..", stepExecution.getCommitCount());
+        log.info("{} writeCount..", stepExecution.getWriteCount());
+        return ExitStatus.COMPLETED;
     }
 }
