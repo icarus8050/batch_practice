@@ -15,7 +15,11 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Map;
 
 @RequiredArgsConstructor
 @StepScope
@@ -23,11 +27,16 @@ import java.time.LocalDateTime;
 public class SimpleInactiveTasklet implements Tasklet {
 
     private final MemberRepository memberRepository;
-    private final InactiveMemberJobParameter jobParameter;
 
     @Override
     public RepeatStatus execute(StepContribution contribution, ChunkContext chunkContext) throws Exception {
-        LocalDateTime requestDateTime = jobParameter.getRequestDateTime();
+        Map<String, Object> jobParameters = chunkContext.getStepContext().getJobParameters();
+        String requestDate = jobParameters.get("requestDate").toString();
+
+        LocalDateTime requestDateTime = LocalDateTime.of(
+                LocalDate.parse(requestDate, DateTimeFormatter.ofPattern("yyyyMMdd")),
+                LocalTime.MIN);
+
         Page<Member> members = memberRepository
                 .findByInactiveMember(requestDateTime, UserStatus.ACTIVE, PageRequest.of(0, 10, Sort.by("idx").ascending()));
 
