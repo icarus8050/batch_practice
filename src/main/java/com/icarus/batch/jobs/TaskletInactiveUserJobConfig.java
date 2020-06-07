@@ -1,6 +1,7 @@
 package com.icarus.batch.jobs;
 
-import com.icarus.batch.jobs.tesklet.SimpleInactiveTasklet;
+import com.icarus.batch.jobs.tesklet.SimpleInactiveMemberTasklet;
+import com.icarus.batch.jobs.tesklet.SimpleInactivePhoneTasklet;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.Job;
@@ -50,16 +51,26 @@ public class TaskletInactiveUserJobConfig {
     public Job inactiveUserJob() throws Exception {
         return jobBuilderFactory
                 .get(JOB_NAME)
-                .start(inactiveStep(null))
+                .start(inactiveMemberStep(null))
+                .next(inactivePhoneStep(null))
                 .build();
     }
 
     @Bean
     @JobScope
-    public Step inactiveStep(SimpleInactiveTasklet simpleInactiveTasklet) {
-        return stepBuilderFactory.get("inactiveStep")
+    public Step inactiveMemberStep(SimpleInactiveMemberTasklet simpleInactiveMemberTasklet) {
+        return stepBuilderFactory.get("inactiveMemberStep")
                 .transactionManager(memberTx)
-                .tasklet(simpleInactiveTasklet)
+                .tasklet(simpleInactiveMemberTasklet)
+                .build();
+    }
+
+    @Bean
+    @JobScope
+    public Step inactivePhoneStep(SimpleInactivePhoneTasklet simpleInactivePhoneTasklet) {
+        return stepBuilderFactory.get("inactivePhoneStep")
+                .transactionManager(memberTx)
+                .tasklet(simpleInactivePhoneTasklet)
                 .build();
     }
 }

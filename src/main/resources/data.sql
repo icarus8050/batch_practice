@@ -31,3 +31,13 @@ insert into ex_member.memberphone (idx, member_idx, phone) values (8, 1008, '010
 insert into ex_member.memberphone (idx, member_idx, phone) values (9, 1009, '01012341234');
 insert into ex_member.memberphone (idx, member_idx, phone) values (10, 1010, '01012341234');
 insert into ex_member.memberphone (idx, member_idx, phone) values (11, 1011, '01012341234');
+insert into ex_member.memberphone (idx, member_idx, phone) values (12, 1011, '01012341234');
+insert into ex_member.memberphone (idx, member_idx, phone) values (13, 1011, '01012341234');
+insert into ex_member.memberphone (idx, member_idx, phone) values (14, 1011, '01012341234');
+insert into ex_member.memberphone (idx, member_idx, phone) values (15, 1011, '01012341234');
+insert into ex_member.memberphone (idx, member_idx, phone) values (16, 1011, '01012341234');
+insert into ex_member.memberphone (idx, member_idx, phone) values (17, 1011, '01012341234');
+insert into ex_member.memberphone (idx, member_idx, phone) values (18, 1011, '01012341234');
+insert into ex_member.memberphone (idx, member_idx, phone) values (19, 1011, '01012341234');
+insert into ex_member.memberphone (idx, member_idx, phone) values (20, 1011, '01012341234');
+insert into ex_member.memberphone (idx, member_idx, phone) values (21, 1011, '01012341234');

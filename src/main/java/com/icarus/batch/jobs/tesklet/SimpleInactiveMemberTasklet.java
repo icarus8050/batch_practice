@@ -19,15 +19,19 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
 
 @Slf4j
 @RequiredArgsConstructor
 @StepScope
 @Component
-public class SimpleInactiveTasklet implements Tasklet, StepExecutionListener {
+public class SimpleInactiveMemberTasklet implements Tasklet, StepExecutionListener {
 
     private final MemberRepository memberRepository;
+    private final InactiveMemberDataBean<List<Long>> inactiveMemberDataBean;
     private LocalDateTime requestDateTime;
+    private List<Long> memberIdxes = new ArrayList<>();
 
     @Override
     public void beforeStep(StepExecution stepExecution) {
@@ -49,7 +53,11 @@ public class SimpleInactiveTasklet implements Tasklet, StepExecutionListener {
         contribution.incrementReadCount();
 
         //process and write..
-        members.get().parallel().forEach(Member::setInactive);
+        members.get().forEach(member -> {
+            member.setInactive();
+            memberIdxes.add(member.getIdx());
+        });
+        inactiveMemberDataBean.put("memberIdxes", memberIdxes);
         contribution.incrementWriteCount(members.getNumberOfElements());
 
         if (members.hasNext()) {
